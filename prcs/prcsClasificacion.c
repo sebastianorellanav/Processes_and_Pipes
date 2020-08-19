@@ -6,6 +6,7 @@
 #include <sys/types.h> //define varios tipos de datos como pid_t
 #include <jpeglib.h>
 #include "../incl/clasificacion.h"
+#include "../incl/lecturaImagenes.h"
 
 #define LECTURA 0
 #define ESCRITURA 1
@@ -18,19 +19,22 @@ int main(int argc, char *argv[]) {
 	int flagResultados;
     int numImagen;
 	char imagename[30];
-    JpegData jpegData;
     pid_t pid;
+	JpegData nueva;
 
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
-	read(STDIN_FILENO, imagename, 30);
-	read(STDIN_FILENO, &jpegData, sizeof(JpegData));
+	read(STDIN_FILENO, imagename, 30*sizeof(char));
+	read(STDIN_FILENO, &nueva, sizeof(JpegData));
+	int len = nueva.height*nueva.width*nueva.ch;
+	alloc_jpeg(&nueva);
+	read(STDIN_FILENO, nueva.data, sizeof(uint8_t *)*len);
     read(STDIN_FILENO, &numImagen, sizeof(int));
 
 
     //*******************************************************************************//
     //5. Clasificar imagen
-	char *nearlyBlack = analisisDePropiedad(jpegData, umbralNeg);
+	char *nearlyBlack = analisisDePropiedad(nueva, umbralNeg);
     if(flagResultados){
 		if(nearlyBlack[0] == 'n'){
 			printf("|          %s       |             %s           |\n", imagename, nearlyBlack);
@@ -52,24 +56,26 @@ int main(int argc, char *argv[]) {
     //Crear proceso hijo
     pid = fork(); 
 		if(pid < 0){
-			fprintf(stderr, "No se pudo crear el proceso hijo" ); 
+			fprintf(stderr, "No se pudo crear el proceso hijo\n" ); 
         	return 1;
 		}
 
 		if(pid > 0){ //Es el padre
 
 			close(pipe6[LECTURA]); //El padre no va a leer, por lo tanto se cierra su descriptor
-            write(pipe6[ESCRITURA], &jpegData, sizeof(JpegData));
+            write(pipe6[ESCRITURA], &nueva, sizeof(JpegData));
+			write(pipe6[ESCRITURA], nueva.data, sizeof(uint8_t*)*len);
             write(pipe6[ESCRITURA], &numImagen, sizeof(int));
 			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
         	printf("Ya escribi el arr en el pipe\n");
 			waitpid(pid, &status,0);
 		}
 		else{ //Es el hijo
-            printf("Soy el hijo de la clasificacion");
+            printf("Soy el hijo de la clasificacion\n");
 			close(pipe6[ESCRITURA]); //Como el hijo no va a escribir, cierra el descriptor de escritura
 			dup2(pipe6[LECTURA], STDIN_FILENO);
-			execl("/prcs/prcsEscritura", "ls","-al", NULL);
+			char *args[]={"./prcsEscritura",NULL}; 
+        	execv(args[0],args);
 		}
     return 0; 
 }

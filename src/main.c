@@ -8,6 +8,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h> //Define las constantes simbólicas para usar con waitpid(), wait() por ejemplo
 #include "../incl/lecturaImagenes.h"
 #include "../incl/escrituraImagenes.h"
 #include "../incl/binarizacion.h"
@@ -82,6 +83,7 @@ int main (int argc, char **argv)
 		sprintf(filename,"./imagen_%i.jpg",i);
 		sprintf(imagename, "imagen_%i",i);
 		int numImagen = i;
+		int lenNombreMasc = strlen(nombreArchivoMasc)+1;
 
 		pid = fork(); 
 		if(pid < 0){
@@ -95,9 +97,10 @@ int main (int argc, char **argv)
 			write(pipes[ESCRITURA], &umbralBin, sizeof(int));
         	write(pipes[ESCRITURA], &umbralNeg, sizeof(int));
 			write(pipes[ESCRITURA], &flagResultados, sizeof(int));
-			write(pipes[ESCRITURA], nombreArchivoMasc, strlen(nombreArchivoMasc)+1);
-			write(pipes[ESCRITURA], imagename, 30);
-			write(pipes[ESCRITURA], filename, 30);
+			write(pipes[ESCRITURA], &lenNombreMasc, sizeof(int));
+			write(pipes[ESCRITURA], nombreArchivoMasc, lenNombreMasc);
+			write(pipes[ESCRITURA], imagename, 30*sizeof(char));
+			write(pipes[ESCRITURA], filename, 30*sizeof(char));
 			write(pipes[ESCRITURA], &numImagen, sizeof(int));
 			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
         	printf("Ya escribi el arr en el pipe\n");
@@ -110,10 +113,11 @@ int main (int argc, char **argv)
 			printf("ahora voy a cambiar el fd de lectura del pipe\n");
 			dup2(pipes[LECTURA], STDIN_FILENO);
         	printf("ahora voy a cambiar mi codigo con excev\n");
-			execl("/prcs/prcsLectura", "ls","-al", NULL);
+			char *args[]={"./prcsLectura",NULL}; 
+        	execv(args[0],args);
 		}
 
-	printf("Termina el padre\n");
+	printf("Termina el PADREEE\n");
 	}
 
 	return 0;

@@ -6,6 +6,7 @@
 #include <sys/types.h> //define varios tipos de datos como pid_t
 #include <jpeglib.h>
 #include "../incl/conversion.h"
+#include "../incl/lecturaImagenes.h"
 
 #define LECTURA 0
 #define ESCRITURA 1
@@ -16,21 +17,30 @@ int main(int argc, char *argv[]) {
 	int umbralNeg;
 	int flagResultados;
 	int numImagen;
-	char *nombreArchivoMasc = NULL;
+	int lenNombreMasc;
+	char nombreArchivoMasc[lenNombreMasc];
 	char imagename[30];
-    JpegData jpegData;
+    JpegData nueva;
+    
+	
     pid_t pid;
 
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
-    read(STDIN_FILENO, nombreArchivoMasc, strlen(nombreArchivoMasc)+1);
-	read(STDIN_FILENO, imagename, 30);
-	read(STDIN_FILENO, &jpegData, sizeof(JpegData));
+    read(STDIN_FILENO, &lenNombreMasc, sizeof(int));
+    read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc*sizeof(char));
+	read(STDIN_FILENO, imagename, 30*sizeof(char));
+	read(STDIN_FILENO, &nueva, sizeof(JpegData));
+	int len = nueva.height*nueva.width*nueva.ch;
+	alloc_jpeg(&nueva);
+	read(STDIN_FILENO, nueva.data, sizeof(uint8_t *)*len);
 	read(STDIN_FILENO, &numImagen, sizeof(int));
 
+
     //2. Convertir a escala de grises
-	jpegData = convertirAEscalaGrises(jpegData);
+	nueva = convertirAEscalaGrises(nueva);
+	printf("Se convirte exitosamente la imagen a escala de grises\n");
 
     int *pipe3 = (int*)malloc(sizeof(int)*2); //se reserva memoria para el pipe
 	pipe(pipe3); //inicializa el pipe
@@ -48,19 +58,22 @@ int main(int argc, char *argv[]) {
 			write(pipe3[ESCRITURA], &umbralBin, sizeof(int));
         	write(pipe3[ESCRITURA], &umbralNeg, sizeof(int));
 			write(pipe3[ESCRITURA], &flagResultados, sizeof(int));
-			write(pipe3[ESCRITURA], nombreArchivoMasc, strlen(nombreArchivoMasc)+1);
-			write(pipe3[ESCRITURA], imagename, 30);
-            write(pipe3[ESCRITURA], &jpegData, sizeof(JpegData));
+			write(pipe3[ESCRITURA], &lenNombreMasc, sizeof(int));
+			write(pipe3[ESCRITURA], nombreArchivoMasc, lenNombreMasc*sizeof(char));
+			write(pipe3[ESCRITURA], imagename, 30*sizeof(char));
+            write(pipe3[ESCRITURA], &nueva, sizeof(JpegData));
+			write(pipe3[ESCRITURA], nueva.data, sizeof(uint8_t*)*len);
 			write(pipe3[ESCRITURA], &numImagen, sizeof(int));
 			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
         	printf("Ya escribi el arr en el pipe\n");
 			waitpid(pid, &status,0);
 		}
 		else{ //Es el hijo
-            printf("Soy el hijo de la conversion");
+            printf("Soy el hijo de la conversion\n");
 			close(pipe3[ESCRITURA]); //Como el hijo no va a escribir, cierra el descriptor de escritura
 			dup2(pipe3[LECTURA], STDIN_FILENO);
-			execl("/prcs/prcsFiltro", "ls","-al", NULL);
+			char *args[]={"./prcsFiltro",NULL}; 
+        	execv(args[0],args);
 		}
     return 0; 
 }
