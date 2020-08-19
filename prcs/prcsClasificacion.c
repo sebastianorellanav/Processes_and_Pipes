@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
 			printf("|          %s       |             %s          |\n", imagename, nearlyBlack);
 		}
 	}
+	
 
 
     //*******************************************************************************//
@@ -51,17 +52,18 @@ int main(int argc, char *argv[]) {
 	pipe(pipe6); //inicializa el pipe
     int status;
 
-
+	printf("aqui1\n");
     //*******************************************************************************//
     //Crear proceso hijo
     pid = fork(); 
+	printf("aqui2\n");
 		if(pid < 0){
 			fprintf(stderr, "No se pudo crear el proceso hijo\n" ); 
         	return 1;
 		}
 
 		if(pid > 0){ //Es el padre
-
+			printf("aqui3\n");
 			close(pipe6[LECTURA]); //El padre no va a leer, por lo tanto se cierra su descriptor
             write(pipe6[ESCRITURA], &nueva, sizeof(JpegData));
 			write(pipe6[ESCRITURA], nueva.data, sizeof(uint8_t*)*len);
@@ -77,5 +79,6 @@ int main(int argc, char *argv[]) {
 			char *args[]={"./prcsEscritura",NULL}; 
         	execv(args[0],args);
 		}
+	liberarJpeg(&nueva);
     return 0; 
 }

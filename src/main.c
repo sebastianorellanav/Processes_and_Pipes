@@ -83,7 +83,7 @@ int main (int argc, char **argv)
 		sprintf(filename,"./imagen_%i.jpg",i);
 		sprintf(imagename, "imagen_%i",i);
 		int numImagen = i;
-		int lenNombreMasc = strlen(nombreArchivoMasc)+1;
+		int lenNombreMasc = strlen(nombreArchivoMasc);
 
 		pid = fork(); 
 		if(pid < 0){

@@ -34,5 +34,6 @@ JpegData convertirAEscalaGrises(JpegData img){
         nuevaImg.data[loc] = Y;
         loc++;
     }
+    liberarJpeg(&img);
     return nuevaImg;
 }

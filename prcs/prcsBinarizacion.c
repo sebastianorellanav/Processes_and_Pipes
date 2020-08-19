@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
     //*******************************************************************************//
     //4. binarizar imagen
 	nueva = binarizarImagen(nueva, umbralBin);
+	printf("La imagen se binarizó correctamente\n");
 
 
     //*******************************************************************************//
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
             printf("Soy el hijo de la binarizacion\n");
 			close(pipe5[ESCRITURA]); //Como el hijo no va a escribir, cierra el descriptor de escritura
 			dup2(pipe5[LECTURA], STDIN_FILENO);
-			char *args[]={"./prcsClasfificacion",NULL}; 
+			char *args[]={"./prcsClasificacion",NULL}; 
         	execv(args[0],args);
 		}
     return 0; 

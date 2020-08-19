@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
 	printf("lee la mascara existosamente\n");
 	nueva = aplicarFiltroLaplaciano(nueva,mascara); 
 	printf("El filtro se aplicó correctamente\n");
+	liberarMascara(mascara);
 
 
     //*******************************************************************************//

@@ -80,7 +80,7 @@ JpegData aplicarFiltroLaplaciano(JpegData img,int **mascara){
         loc+=2;         //Permite omitir los margenes de la matriz (en términos visuales) de píxeles
     }
     printf("Antes de liberar la memoria\n");
-    //liberarJpeg(&img);
+    liberarJpeg(&img);
     return nuevaImagen;
 
 }
@@ -118,4 +118,13 @@ void  calcularFiltro(JpegData *img,JpegData *nueva,int **mascara,int loc,int w, 
     int resultado = n1 + n2 + n3 + n4 + n5 + n6 +n7 +n8 +n9; 
     nueva->data[loc] = resultado;
  
+}
+
+void liberarMascara(int ** mascara){
+    for (int i = 0; i < 3; i++)
+    {
+        int* currentIntPtr = mascara[i];
+        free(currentIntPtr);
+    }
+    free(mascara);
 }
