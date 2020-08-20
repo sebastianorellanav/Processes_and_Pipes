@@ -43,13 +43,13 @@ int main(int argc, char *argv[]) {
 			printf("|          %s       |             %s          |\n", imagename, nearlyBlack);
 		}
 	}
-	
-
-
+	printf("despues del analisis de prpiedad\n");
     //*******************************************************************************//
     //Crear nuevo pipe para enviar mensajes al proceso hijo
-    int *pipe6 = (int*)malloc(sizeof(int)*2); //se reserva memoria para el pipe
+    int pipe6[2]; //se reserva memoria para el pipe
+	printf("se cre in pipe[2]\n");
 	pipe(pipe6); //inicializa el pipe
+	printf("Se crea el pipe de pana\n");
     int status;
 
 	printf("aqui1\n");
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 			printf("aqui3\n");
 			close(pipe6[LECTURA]); //El padre no va a leer, por lo tanto se cierra su descriptor
             write(pipe6[ESCRITURA], &nueva, sizeof(JpegData));
-			write(pipe6[ESCRITURA], nueva.data, sizeof(uint8_t*)*len);
+			write(pipe6[ESCRITURA], nueva.data, sizeof(uint8_t *)*len);
             write(pipe6[ESCRITURA], &numImagen, sizeof(int));
 			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
         	printf("Ya escribi el arr en el pipe\n");
@@ -79,6 +79,7 @@ int main(int argc, char *argv[]) {
 			char *args[]={"./prcsEscritura",NULL}; 
         	execv(args[0],args);
 		}
-	liberarJpeg(&nueva);
+		liberarJpeg(&nueva);
+	printf("termina el proceso de clasificacion\n");
     return 0; 
 }

@@ -84,5 +84,8 @@ int main(int argc, char *argv[]) {
 			char *args[]={"./prcsBinarizacion",NULL}; 
         	execv(args[0],args);
 		}
+	free(pipe4);
+	liberarJpeg(&nueva);
+	printf("termina el proceso filtro\n");
     return 0; 
 }

@@ -21,6 +21,7 @@ int escribirJpeg(const JpegData *jpegData,
                 struct jpeg_error_mgr *jerr, 
                 char *tipoColor)
 {
+    printf("entra a escribir jpeg\n");
     // 1. Creación del objeto de compresión JPEG.
     struct jpeg_compress_struct cinfo;
     jpeg_create_compress(&cinfo);
@@ -31,9 +32,11 @@ int escribirJpeg(const JpegData *jpegData,
         printf("Error: failed to open %s\n", nombreSalida);
         return 0;
     }
+    printf("1\n");
     // 2. Especificar el destino del data.
     jpeg_stdio_dest(&cinfo, fp);
 
+    printf("2\n");
     // 3. Cambiando parámetros para la compresión.
     cinfo.image_width      = jpegData->width;
     cinfo.image_height     = jpegData->height;
@@ -45,9 +48,11 @@ int escribirJpeg(const JpegData *jpegData,
     
     jpeg_set_defaults(&cinfo);
 
+    printf("3\n");
     // 4. Inicio de la compresión.
     jpeg_start_compress(&cinfo, 1);
 
+    printf("4\n");
     // 5. Lectura linea a linea de la imagen.
     uint8_t *row = jpegData->data;
     const uint32_t stride = jpegData->width * jpegData->ch;
@@ -55,10 +60,11 @@ int escribirJpeg(const JpegData *jpegData,
         jpeg_write_scanlines(&cinfo, &row, 1);
         row += stride;
     }
-
+    printf("5\n");
     // 6. Fin de la compresión.
     jpeg_finish_compress(&cinfo);
     jpeg_destroy_compress(&cinfo);
+    printf("6\n");
     fclose(fp);
 
     return 1;
@@ -72,12 +78,15 @@ int escribirJpeg(const JpegData *jpegData,
 //                por el main.
 //Salidas:      - Un JpegData que representa a la imagen de entrada.
 JpegData escribirImagenes(JpegData jpegData, char *tipoColor, char *nombreSalida){
+    printf("entra en escribirImagenes()\n");
     struct jpeg_error_mgr jerr;
     char *dst = nombreSalida;
     if (!escribirJpeg(&jpegData, dst, &jerr, tipoColor)){
+        printf("no se pudo escribir la imagen\n");
         liberarJpeg(&jpegData);
         return jpegData;
     }
+    printf("si se pudo escrbir la imagen\n");
     return jpegData;
 }
 

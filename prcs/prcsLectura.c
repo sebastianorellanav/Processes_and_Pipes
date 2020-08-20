@@ -70,5 +70,8 @@ int main(int argc, char *argv[]) {
 			char *args[]={"./prcsConversion",NULL}; 
         	execv(args[0],args);
 		}
+	free(pipe2);
+	liberarJpeg(&jpegData);
+	printf("termina el proceso de lectura\n");
     return 0; 
 }

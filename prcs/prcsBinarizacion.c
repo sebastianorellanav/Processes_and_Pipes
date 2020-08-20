@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 			write(pipe5[ESCRITURA], &flagResultados, sizeof(int));
 			write(pipe5[ESCRITURA], imagename, 30*sizeof(char));
             write(pipe5[ESCRITURA], &nueva, sizeof(JpegData));
-			write(pipe5[ESCRITURA], nueva.data, sizeof(uint8_t*)*len);
+			write(pipe5[ESCRITURA], nueva.data, sizeof(uint8_t *)*len);
 			write(pipe5[ESCRITURA], &numImagen, sizeof(int));
 			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
         	printf("Ya escribi el arr en el pipe\n");
@@ -75,5 +75,8 @@ int main(int argc, char *argv[]) {
 			char *args[]={"./prcsClasificacion",NULL}; 
         	execv(args[0],args);
 		}
+	free(pipe5);
+	liberarJpeg(&nueva);
+	printf("termina el proceso de binarizacion\n");
     return 0; 
 }

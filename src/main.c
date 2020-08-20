@@ -28,8 +28,8 @@ int main (int argc, char **argv)
 	int umbralNeg = 0;
 	int flagResultados = 0;
 	char *nombreArchivoMasc = NULL;
-	int index;
-	int c;
+	int index = 0;
+	int c = 0;
 
 	opterr = 0;
 
@@ -78,8 +78,8 @@ int main (int argc, char **argv)
 		pipe(pipes); //inicializa el pipe
 		int status;
     	pid_t pid;
-		char filename[30];
-		char imagename[30];
+		char filename[30]="";
+		char imagename[30]="";
 		sprintf(filename,"./imagen_%i.jpg",i);
 		sprintf(imagename, "imagen_%i",i);
 		int numImagen = i;
@@ -116,7 +116,7 @@ int main (int argc, char **argv)
 			char *args[]={"./prcsLectura",NULL}; 
         	execv(args[0],args);
 		}
-
+	free(pipes);
 	printf("Termina el PADREEE\n");
 	}
 

@@ -75,5 +75,8 @@ int main(int argc, char *argv[]) {
 			char *args[]={"./prcsFiltro",NULL}; 
         	execv(args[0],args);
 		}
+	free(pipe3);
+	liberarJpeg(&nueva);
+	printf("Termina el proceso de conversion\n");
     return 0; 
 }
