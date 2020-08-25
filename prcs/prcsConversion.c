@@ -11,72 +11,105 @@
 #define LECTURA 0
 #define ESCRITURA 1
 
-int main(int argc, char *argv[]) {
-	printf("soy el proceso hijo que convierte la imagen a la escala de grises\n");
-    int umbralBin;
-	int umbralNeg;
-	int flagResultados;
-	int numImagen;
-	int lenNombreMasc;
-	char nombreArchivoMasc[lenNombreMasc];
-	char imagename[30];
-    JpegData nueva;
-    
-	
-    pid_t pid;
+int main(int argc, char *argv[])
+{
+	printf("Este es el proceso de conversion\n");
+    //Crear variables para guardar datos leidos del pipe
+    int umbralBin = 0;
+    int umbralNeg = 0;
+    int flagResultados = 0;
+    int numImagen = 0;
+    int lenNombreMasc = 0;
+    int height = 0;
+    int width = 0;
+    int lenImagen = 0;
+    JpegData jpegData;
 
+    //Leer datos del pipe23
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
+    read(STDIN_FILENO, &numImagen, sizeof(int));
     read(STDIN_FILENO, &lenNombreMasc, sizeof(int));
+    read(STDIN_FILENO, &height, sizeof(int));
+    read(STDIN_FILENO, &width, sizeof(int));
+    lenImagen = 3 * height * width;
+    jpegData.height = height;
+    jpegData.width = width;
+    jpegData.ch = 3;
+    alloc_jpeg(&jpegData);
+	uint8_t dataImagen[lenImagen];
+    read(STDIN_FILENO, dataImagen, sizeof(uint8_t)*lenImagen);
+    char nombreArchivoMasc[lenNombreMasc];
     read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc*sizeof(char));
-	read(STDIN_FILENO, imagename, 30*sizeof(char));
-	read(STDIN_FILENO, &nueva, sizeof(JpegData));
-	int len = nueva.height*nueva.width*nueva.ch;
-	alloc_jpeg(&nueva);
-	read(STDIN_FILENO, nueva.data, sizeof(uint8_t *)*len);
-	read(STDIN_FILENO, &numImagen, sizeof(int));
 
+	for (int i = 0; i < lenImagen; i++)
+	{
+		jpegData.data[i] = dataImagen[i];
+		printf("%d",dataImagen[i]);
+	}
+	
 
-    //2. Convertir a escala de grises
-	nueva = convertirAEscalaGrises(nueva);
-	printf("Se convirte exitosamente la imagen a escala de grises\n");
+    //-----------------------------------------------------------
+    //Convertir Imagen a Blanco y Negro
+    jpegData = convertirAEscalaGrises(jpegData);
+    printf("Se convierte la imagen exitosamente\n");
 
-    int *pipe3 = (int*)malloc(sizeof(int)*2); //se reserva memoria para el pipe
-	pipe(pipe3); //inicializa el pipe
+	//-----------------------------------------------------------------
+	
+	lenImagen = jpegData.width*jpegData.height;
+	uint8_t newDataImagen[lenImagen];
+
+	for (int i = 0; i < lenImagen; i++)
+	{
+		newDataImagen[i] = jpegData.data[i];
+	}
+	
+
+    //-----------------------------------------------------------------
+    //Se crea un nuevo pipe y un nuevo proceso
+    int pipe34[2];
     int status;
+    pid_t pid;
+    pipe(pipe34);
 
-    pid = fork(); 
-		if(pid < 0){
-			fprintf(stderr, "No se pudo crear el proceso hijo" ); 
-        	return 1;
-		}
+    pid = fork();
+    if(pid < 0) //No se pudo crear el proceso
+    {
+        fprintf(stderr, "No se pudo crear el proceso de Filtro\n");
+        return 1;
+    }
 
-		if(pid > 0){ //Es el padre
+    else if (pid > 0) //es el padre
+    {
+        close(pipe34[LECTURA]);
+        //Se escriben los datos para enviar por el pipe34
+        write(pipe34[ESCRITURA], &umbralBin, sizeof(int));
+        write(pipe34[ESCRITURA], &umbralNeg, sizeof(int));
+        write(pipe34[ESCRITURA], &flagResultados, sizeof(int));
+        write(pipe34[ESCRITURA], &numImagen, sizeof(int));
+        write(pipe34[ESCRITURA], &lenNombreMasc, sizeof(int));
+        write(pipe34[ESCRITURA], &height, sizeof(int));
+        write(pipe34[ESCRITURA], &width, sizeof(int));
+        write(pipe34[ESCRITURA], newDataImagen, sizeof(uint8_t)*lenImagen);
+        write(pipe34[ESCRITURA], nombreArchivoMasc, lenNombreMasc*sizeof(char));
 
-			close(pipe3[LECTURA]); //El padre no va a leer, por lo tanto se cierra su descriptor
-			write(pipe3[ESCRITURA], &umbralBin, sizeof(int));
-        	write(pipe3[ESCRITURA], &umbralNeg, sizeof(int));
-			write(pipe3[ESCRITURA], &flagResultados, sizeof(int));
-			write(pipe3[ESCRITURA], &lenNombreMasc, sizeof(int));
-			write(pipe3[ESCRITURA], nombreArchivoMasc, lenNombreMasc*sizeof(char));
-			write(pipe3[ESCRITURA], imagename, 30*sizeof(char));
-            write(pipe3[ESCRITURA], &nueva, sizeof(JpegData));
-			write(pipe3[ESCRITURA], nueva.data, sizeof(uint8_t*)*len);
-			write(pipe3[ESCRITURA], &numImagen, sizeof(int));
-			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
-        	printf("Ya escribi el arr en el pipe\n");
-			waitpid(pid, &status,0);
-		}
-		else{ //Es el hijo
-            printf("Soy el hijo de la conversion\n");
-			close(pipe3[ESCRITURA]); //Como el hijo no va a escribir, cierra el descriptor de escritura
-			dup2(pipe3[LECTURA], STDIN_FILENO);
-			char *args[]={"./prcsFiltro",NULL}; 
-        	execv(args[0],args);
-		}
-	free(pipe3);
-	liberarJpeg(&nueva);
-	printf("Termina el proceso de conversion\n");
-    return 0; 
+        //Se espera a que el proceso hijo termine su ejecucion
+        waitpid(pid, &status, 0);
+    }
+
+
+    else //es el hijo
+    {
+        close(pipe34[ESCRITURA]);
+        dup2(pipe34[LECTURA], STDIN_FILENO);
+        //Se cambia el codigo del proceso hijo
+        char *args[]={"./pFiltro",NULL}; 
+        execv(args[0],args);
+    }    
+
+    liberarJpeg(&jpegData);
+    printf("El proceso de Conversion finaliza su ejecución\n");
+    return 1;
+
 }

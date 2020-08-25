@@ -11,81 +11,99 @@
 #define LECTURA 0
 #define ESCRITURA 1
 
-int main(int argc, char *argv[]) {
-	printf("soy el proceso hijo que filtra la imagen\n");
-    //*******************************************************************************//
-    //Leer mensajes del pipe del proceso padre
-    int umbralBin;
-	int umbralNeg;
-	int flagResultados;
-	int numImagen;
-	int lenNombreMasc;
-	char nombreArchivoMasc[lenNombreMasc];
-	char imagename[30];
-    pid_t pid;
-	JpegData nueva;
+int main(int argc, char *argv[])
+{
+    //Se crean las variables para almacenar los datos leidos del pipe34
+    int umbralBin = 0;
+    int umbralNeg = 0;
+    int flagResultados = 0;
+    int numImagen = 0;
+    int lenNombreMasc = 0;
+    int height = 0;
+    int width = 0;
+    int lenImagen = 0;
+    JpegData jpegData;
 
+    //Se leen los datos del pipe34
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
+    read(STDIN_FILENO, &numImagen, sizeof(int));
     read(STDIN_FILENO, &lenNombreMasc, sizeof(int));
+    read(STDIN_FILENO, &height, sizeof(int));
+    read(STDIN_FILENO, &width, sizeof(int));
+    lenImagen = height*width;
+    jpegData.height = height;
+    jpegData.width = width;
+    jpegData.ch = 1;
+    alloc_jpeg(&jpegData);
+	uint8_t dataImagen[lenImagen];
+    read(STDIN_FILENO, dataImagen, sizeof(uint8_t)*lenImagen);
+    char nombreArchivoMasc[lenNombreMasc];
     read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc*sizeof(char));
-	read(STDIN_FILENO, imagename, 30*sizeof(char));
-	read(STDIN_FILENO, &nueva, sizeof(JpegData));
-	int len = nueva.height*nueva.width*nueva.ch;
-	alloc_jpeg(&nueva);
-	read(STDIN_FILENO, nueva.data, sizeof(uint8_t *)*len);
-	read(STDIN_FILENO, &numImagen, sizeof(int));
 
+	for (int i = 0; i < lenImagen; i++)
+	{
+		jpegData.data[i] = dataImagen[i];
+	}
+	
 
-    //*******************************************************************************//
-    //3. aplicar filtro laplaciano
-	printf("nombre mascara= %s\n",nombreArchivoMasc);
+    //-------------------------------------------------------------------
+    //Se aplica el Filtro Laplaciano
+	printf("la mascara se llama == %s\n", nombreArchivoMasc);
     int **mascara = leerMascara(nombreArchivoMasc);
-	printf("lee la mascara existosamente\n");
-	nueva = aplicarFiltroLaplaciano(nueva,mascara); 
-	printf("El filtro se aplicó correctamente\n");
-	liberarMascara(mascara);
+    jpegData = aplicarFiltroLaplaciano(jpegData,mascara);
+    liberarMascara(mascara);
+	//-----------------------------------------------------------------
 
+	for (int i = 0; i < lenImagen; i++)
+	{
+		dataImagen[i] = jpegData.data[i];
+	}
+	
 
-    //*******************************************************************************//
-    //Crear nuevo pipe para enviar mensajes al proceso hijo
-    int *pipe4 = (int*)malloc(sizeof(int)*2); //se reserva memoria para el pipe
-	pipe(pipe4); //inicializa el pipe
+    //------------------------------------------------------------------
+    //Se crea un nuevo pipe y un nuevo proceso
+    int pipe45[2];
     int status;
+    pid_t pid;
+    pipe(pipe45);
 
+    pid = fork();
+    if(pid < 0) //No se pudo crear el hijo
+    {
+        fprintf(stderr, "No se pudo crear el proceso de Binarizacion\n");
+        return 1;
+    }
 
-    //*******************************************************************************//
-    //Crear proceso hijo
-    pid = fork(); 
-		if(pid < 0){
-			fprintf(stderr, "No se pudo crear el proceso hijo" ); 
-        	return 1;
-		}
+    else if (pid > 0) //es el padre
+    {
+        close(pipe45[LECTURA]);
+        //se escriben los datos en el pipe45
+        write(pipe45[ESCRITURA], &umbralBin, sizeof(int));
+        write(pipe45[ESCRITURA], &umbralNeg, sizeof(int));
+        write(pipe45[ESCRITURA], &flagResultados, sizeof(int));
+        write(pipe45[ESCRITURA], &numImagen, sizeof(int));
+        write(pipe45[ESCRITURA], &(jpegData.height), sizeof(int));
+        write(pipe45[ESCRITURA], &(jpegData.width), sizeof(int));
+        write(pipe45[ESCRITURA], dataImagen, sizeof(uint8_t)*lenImagen);
 
-		if(pid > 0){ //Es el padre
+        //Se espera al hijo
+        waitpid(pid, &status, 0);
+    }
 
-			close(pipe4[LECTURA]); //El padre no va a leer, por lo tanto se cierra su descriptor
-			write(pipe4[ESCRITURA], &umbralBin, sizeof(int));
-        	write(pipe4[ESCRITURA], &umbralNeg, sizeof(int));
-			write(pipe4[ESCRITURA], &flagResultados, sizeof(int));
-			write(pipe4[ESCRITURA], imagename, 30*sizeof(char));
-            write(pipe4[ESCRITURA], &nueva, sizeof(JpegData));
-			write(pipe4[ESCRITURA], nueva.data, sizeof(uint8_t*)*len);
-			write(pipe4[ESCRITURA], &numImagen, sizeof(int));
-			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
-        	printf("Ya escribi el arr en el pipe\n");
-			waitpid(pid, &status,0);
-		}
-		else{ //Es el hijo
-            printf("Soy el hijo del filtro\n");
-			close(pipe4[ESCRITURA]); //Como el hijo no va a escribir, cierra el descriptor de escritura
-			dup2(pipe4[LECTURA], STDIN_FILENO);
-			char *args[]={"./prcsBinarizacion",NULL}; 
-        	execv(args[0],args);
-		}
-	free(pipe4);
-	liberarJpeg(&nueva);
-	printf("termina el proceso filtro\n");
-    return 0; 
+    else //es el hijo
+    {
+        close(pipe45[ESCRITURA]);
+        dup2(pipe45[LECTURA], STDIN_FILENO);
+        
+        //Se cambia el codigo del hijo
+        char *args[]={"./pBinarizacion",NULL}; 
+        execv(args[0],args);
+    }
+
+    liberarJpeg(&jpegData);
+    printf("El proceso Filtro termina su ejecución\n");
+    return 1;
+    
 }

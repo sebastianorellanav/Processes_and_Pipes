@@ -20,16 +20,15 @@
 #define ESCRITURA 1
 
 //Funcion Main
-int main (int argc, char **argv)
-{
-	//Inicialización de Variables
+int main (int argc, char *argv[]){
+
 	int cantImagenes = 0;
 	int umbralBin = 0;
 	int umbralNeg = 0;
 	int flagResultados = 0;
-	char *nombreArchivoMasc = NULL;
-	int index = 0;
+	int numImagen = 0;
 	int c = 0;
+	char *nombreArchivoMasc = NULL;
 
 	opterr = 0;
 
@@ -65,63 +64,64 @@ int main (int argc, char **argv)
 			default:
 				abort ();
 			}
-
+	
 	if(flagResultados){
 		printf("|          image          |       nearly black       |\n");
 		printf("|-------------------------|--------------------------|\n");
 	}
 
-	// Para cada imagen
+	//Para cada Imagen
 	for (int i = 1; i <= cantImagenes; i++)
 	{
-		int *pipes = (int*)malloc(sizeof(int)*2); //se reserva memoria para el pipe
-		pipe(pipes); //inicializa el pipe
+		int pipe12[2];
+		pipe(pipe12);
 		int status;
-    	pid_t pid;
-		char filename[30]="";
-		char imagename[30]="";
-		sprintf(filename,"./imagen_%i.jpg",i);
-		sprintf(imagename, "imagen_%i",i);
-		int numImagen = i;
+		pid_t pid;
 		int lenNombreMasc = strlen(nombreArchivoMasc);
 
-		pid = fork(); 
-		if(pid < 0){
-			fprintf(stderr, "No se pudo crear el proceso hijo" ); 
-        	return 1;
+		pid = fork();
+		if(pid < 0)	//Si no se pudo crear el proceso
+		{
+			fprintf(stderr, "No se pudo crear el proceso de Lectura\n");
+			return 1;
 		}
 
-		if(pid > 0){ //Es el padre
+		else if (pid > 0) //Si es el padre
+		{
+			printf("entra al padre\n");
+			close(pipe12[LECTURA]);
+			//Escribo las cosas en el pipe para enviarselas al proceso hijo
+			write(pipe12[ESCRITURA], &umbralBin, sizeof(int));
+			write(pipe12[ESCRITURA], &umbralNeg, sizeof(int));
+			write(pipe12[ESCRITURA], &flagResultados, sizeof(int));
+			write(pipe12[ESCRITURA], &i, sizeof(int));
+			write(pipe12[ESCRITURA], &lenNombreMasc, sizeof(int));
+			write(pipe12[ESCRITURA], nombreArchivoMasc, lenNombreMasc);
 
-			close(pipes[LECTURA]); //El padre no va a leer, por lo tanto se cierra su descriptor
-			write(pipes[ESCRITURA], &umbralBin, sizeof(int));
-        	write(pipes[ESCRITURA], &umbralNeg, sizeof(int));
-			write(pipes[ESCRITURA], &flagResultados, sizeof(int));
-			write(pipes[ESCRITURA], &lenNombreMasc, sizeof(int));
-			write(pipes[ESCRITURA], nombreArchivoMasc, lenNombreMasc);
-			write(pipes[ESCRITURA], imagename, 30*sizeof(char));
-			write(pipes[ESCRITURA], filename, 30*sizeof(char));
-			write(pipes[ESCRITURA], &numImagen, sizeof(int));
-			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
-        	printf("Ya escribi el arr en el pipe\n");
-			waitpid(pid, &status,0);
+			//Espero al hijo
+			waitpid(pid, &status, 0);
 		}
-		else{ //Es el hijo
-		
-			close(pipes[ESCRITURA]); //Como el hijo no va a escribir, cierra el descriptor de escritura
-			printf("al parecer soy el hijo y mi pid es: %i\n" , getpid());
-			printf("ahora voy a cambiar el fd de lectura del pipe\n");
-			dup2(pipes[LECTURA], STDIN_FILENO);
-        	printf("ahora voy a cambiar mi codigo con excev\n");
-			char *args[]={"./prcsLectura",NULL}; 
+
+		else
+		{
+			printf("entra al hijo\n");
+			close(pipe12[ESCRITURA]);
+			dup2(pipe12[LECTURA], STDIN_FILENO);
+
+			//cambiar código del hijo con execv
+			char *args[]={"./pLectura",NULL}; 
         	execv(args[0],args);
 		}
-	free(pipes);
-	printf("Termina el PADREEE\n");
-	}
 
-	return 0;
+	printf("Se proceso correctamente la imagen %d\n",i);
+
+	}
+	printf("Finaliza el procesamiento de imagenes\n");
+	return 1;
+	
 }
+
+
 	/*
 	int **mascara = leerMascara(nombreArchivoMasc);
 

@@ -11,30 +11,42 @@
 #define LECTURA 0
 #define ESCRITURA 1
 
-int main(int argc, char *argv[]) {
-	printf("soy el proceso hijo que clasifica la imagen\n");
-    //*******************************************************************************//
-    //Leer mensajes del pipe del proceso padre
-	int umbralNeg;
-	int flagResultados;
-    int numImagen;
-	char imagename[30];
-    pid_t pid;
-	JpegData nueva;
+int main(int argc, char *argv[])
+{
+    //se crean las variables para guardar los datos leidos del pipe
+    int umbralNeg = 0;
+    int flagResultados = 0;
+    int numImagen = 0;
+    int height = 0;
+    int width = 0;
+    int lenImagen = 0;
+    JpegData jpegData;
 
+    //Se leen los datos del pipe56
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
-	read(STDIN_FILENO, imagename, 30*sizeof(char));
-	read(STDIN_FILENO, &nueva, sizeof(JpegData));
-	int len = nueva.height*nueva.width*nueva.ch;
-	alloc_jpeg(&nueva);
-	read(STDIN_FILENO, nueva.data, sizeof(uint8_t *)*len);
     read(STDIN_FILENO, &numImagen, sizeof(int));
+    read(STDIN_FILENO, &height, sizeof(int));
+    read(STDIN_FILENO, &width, sizeof(int));
+    lenImagen = height * width;
+    jpegData.height = height;
+    jpegData.width = width;
+    jpegData.ch = 1;
+    alloc_jpeg(&jpegData);
+	uint8_t dataImagen[lenImagen];
+    read(STDIN_FILENO, dataImagen, sizeof(uint8_t)*lenImagen);
 
+	for (int i = 0; i < lenImagen; i++)
+	{
+		jpegData.data[i] = dataImagen[i];
+	}
+	
 
-    //*******************************************************************************//
-    //5. Clasificar imagen
-	char *nearlyBlack = analisisDePropiedad(nueva, umbralNeg);
+    //-----------------------------------------------------------
+    //Se clasifica la imagen
+    char imagename[30] = "";
+    sprintf(imagename, "imagen_%i",numImagen);
+    char *nearlyBlack = analisisDePropiedad(jpegData, umbralNeg);
     if(flagResultados){
 		if(nearlyBlack[0] == 'n'){
 			printf("|          %s       |             %s           |\n", imagename, nearlyBlack);
@@ -43,43 +55,48 @@ int main(int argc, char *argv[]) {
 			printf("|          %s       |             %s          |\n", imagename, nearlyBlack);
 		}
 	}
-	printf("despues del analisis de prpiedad\n");
-    //*******************************************************************************//
-    //Crear nuevo pipe para enviar mensajes al proceso hijo
-    int pipe6[2]; //se reserva memoria para el pipe
-	printf("se cre in pipe[2]\n");
-	pipe(pipe6); //inicializa el pipe
-	printf("Se crea el pipe de pana\n");
+	//--------------------------------------------------------------------
+	
+
+    //-------------------------------------------------------------------
+    //Se crea un nuevo pipe y un nuevo proceso
+    int pipe67[2];
     int status;
+    pid_t pid;
+    pipe(pipe67);
 
-	printf("aqui1\n");
-    //*******************************************************************************//
-    //Crear proceso hijo
-    pid = fork(); 
-	printf("aqui2\n");
-		if(pid < 0){
-			fprintf(stderr, "No se pudo crear el proceso hijo\n" ); 
-        	return 1;
-		}
+    pid = fork();
+    if(pid < 0) //No se pudo crear el proceso
+    {
+        fprintf(stderr, "No se pudo crear el proceso de Escritura\n");
+        return 1;
+    }
 
-		if(pid > 0){ //Es el padre
-			printf("aqui3\n");
-			close(pipe6[LECTURA]); //El padre no va a leer, por lo tanto se cierra su descriptor
-            write(pipe6[ESCRITURA], &nueva, sizeof(JpegData));
-			write(pipe6[ESCRITURA], nueva.data, sizeof(uint8_t *)*len);
-            write(pipe6[ESCRITURA], &numImagen, sizeof(int));
-			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
-        	printf("Ya escribi el arr en el pipe\n");
-			waitpid(pid, &status,0);
-		}
-		else{ //Es el hijo
-            printf("Soy el hijo de la clasificacion\n");
-			close(pipe6[ESCRITURA]); //Como el hijo no va a escribir, cierra el descriptor de escritura
-			dup2(pipe6[LECTURA], STDIN_FILENO);
-			char *args[]={"./prcsEscritura",NULL}; 
-        	execv(args[0],args);
-		}
-		liberarJpeg(&nueva);
-	printf("termina el proceso de clasificacion\n");
-    return 0; 
+    else if (pid > 0) //es el padre
+    {
+        close(pipe67[LECTURA]);
+        //Se escriben los datos en el pipe67
+        write(pipe67[ESCRITURA], &numImagen, sizeof(int));
+        write(pipe67[ESCRITURA], &height, sizeof(int));
+        write(pipe67[ESCRITURA], &width, sizeof(int));
+        write(pipe67[ESCRITURA], dataImagen, sizeof(uint8_t)*lenImagen);
+
+        //Se espera al hijo
+        waitpid(pid, &status, 0);
+    }
+
+    else //es el hijo
+    {
+        close(pipe67[ESCRITURA]);
+        dup2(pipe67[LECTURA], STDIN_FILENO);
+
+        //Se cambia el codigo del hijo
+        char *args[]={"./pEscritura",NULL}; 
+        execv(args[0],args);
+    }
+    
+    liberarJpeg(&jpegData);
+    printf("El proceso de Clasificación termina su ejecucion\n");
+    return 1;
+    
 }

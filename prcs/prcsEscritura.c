@@ -10,36 +10,43 @@
 
 #define LECTURA 0
 #define ESCRITURA 1
+int main(int argc, char *argv[])
+{
+    //se crean las variables para guardar los datos leidos del pipe67
+    int numImagen = 0;
+    int height = 0;
+    int width = 0;
+    int lenImagen = 0;
+    JpegData jpegData;
 
-int main(int argc, char *argv[]) {
-	printf("soy el proceso hijo que escribe la imagen la imagen\n");
-    //*******************************************************************************//
-    //Leer mensajes del pipe del proceso padre
-    
-    int numImagen;
-    pid_t pid;
-    JpegData nueva;
-    printf("antes de leer del pipe\n");
-	read(STDIN_FILENO, &nueva, sizeof(JpegData));
-    printf("lee la structura\n");
-	int len = nueva.height*nueva.width*nueva.ch;
-	alloc_jpeg(&nueva);
-	read(STDIN_FILENO, nueva.data, sizeof(uint8_t *)*len);
-    printf("lee el puntero de datos\n");
+    //Se leen los datos del pipe67
     read(STDIN_FILENO, &numImagen, sizeof(int));
+    read(STDIN_FILENO, &height, sizeof(int));
+    read(STDIN_FILENO, &width, sizeof(int));
+    lenImagen = height * width;
+    jpegData.height = height;
+    jpegData.width = width;
+    jpegData.ch = 1;
+    alloc_jpeg(&jpegData);
+    uint8_t dataImagen[lenImagen];
+    read(STDIN_FILENO, jpegData.data, sizeof(uint8_t*)*lenImagen);
 
-    printf("lee todas las cosas del pipe\n");
-    //*******************************************************************************//
-    //6. Escribir imagen
-	char fileout[30];
-	sprintf(fileout,"out_%i.jpg",numImagen);
-    printf("crea el string del nombre de la imagn a guaradar: %s\n",fileout);
-	escribirImagenes(nueva, "escalagrises",fileout);
-    printf("Se escribe la imagen correctamente\n");
+    for (int i = 0; i < lenImagen; i++)
+    {
+        jpegData.data[i] = dataImagen[i];
+    }
     
-    //7. liberar memoria
-	liberarJpeg(&nueva);
+
+    //------------------------------------------------------------------
+    //Se escribe la imagen
+    char fileout[30];
+	sprintf(fileout,"./out_%i.jpg",numImagen);
+    escribirImagenes(jpegData, "escalagrises",fileout);
+
+    liberarJpeg(&jpegData);
     
-    printf("Aqui termina la cadena de procesos y vuelve al proceso padre a ver si hay mas imagenes");
-    return 0; 
+    printf("El proceso de Escritura finaliza su ejecucion\n");
+    return 1; 
+    
+    
 }

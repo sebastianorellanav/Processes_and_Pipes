@@ -10,68 +10,88 @@
 #define LECTURA 0
 #define ESCRITURA 1
 
-int main(int argc, char *argv[]) {
-	printf("soy el proceso hijo que lee la imagen\n");
-    int umbralBin;
-	int umbralNeg;
-	int flagResultados;
-	int numImagen;
-	int lenNombreMasc;
-	char nombreArchivoMasc[lenNombreMasc];
-    char filename[30];
-	char imagename[30];
-    pid_t pid;
+int main(int argc, char *argv[])
+{
+	printf("Este es el proceso de lectura\n");
+    //Crear variables para almacenar los datos del pipe12
+    int umbralBin = 0;
+    int umbralNeg = 0;
+    int flagResultados = 0;
+    int numImagen = 0;
+    int lenNombreMasc = 0;
 
+    //Leer datos del pipe12
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
-	read(STDIN_FILENO, &lenNombreMasc, sizeof(int));
+    read(STDIN_FILENO, &numImagen, sizeof(int));
+    read(STDIN_FILENO, &lenNombreMasc, sizeof(int));
+    char nombreArchivoMasc[lenNombreMasc];
     read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc);
-	read(STDIN_FILENO, imagename, 30*sizeof(char));
-	read(STDIN_FILENO, filename, 30*sizeof(char));
-	read(STDIN_FILENO, &numImagen, sizeof(int));
-	
-    //1. Leer la imagen
+
+    //------------------------------------------------------
+    //Leer la imagen
+    char filename[30] = "";
+    sprintf(filename,"./imagen_%i.jpg",numImagen);
     JpegData jpegData = leerImagenes(filename);
-	printf("se lee la imagen correctamente\n");
-	int len = jpegData.height*jpegData.width*jpegData.ch;
+    int height = jpegData.height;
+    int width = jpegData.width;
+    int lenImagen = 3*height*width;
+	printf("antes de crear el array\n");
+	uint8_t dataImagen[lenImagen];
+	printf("si llega hasta aqui se pudo asignar la memoria\n");
+	for (int i = 0; i < lenImagen; i++)
+	{
+		dataImagen[i] = jpegData.data[i];
+		printf("%d",jpegData.data[i]);
+	}
+	printf("\n\n\n");
+	
 
-
-    int *pipe2 = (int*)malloc(sizeof(int)*2); //se reserva memoria para el pipe
-	pipe(pipe2); //inicializa el pipe
+    //------------------------------------------------------
+    //Crear nuevo pipe y nuevo proceso
+    int pipe23[2];
+    pipe(pipe23);
     int status;
+    pid_t pid;
 
-    pid = fork(); 
-		if(pid < 0){
-			fprintf(stderr, "No se pudo crear el proceso hijo" ); 
-        	return 1;
-		}
+    pid = fork();
+    if(pid < 0) //No se pudo crear el proceso
+    {
+        fprintf(stderr, "No se pudo crear el proceso de Conversion\n");
+        return 1;
+    }
 
-		if(pid > 0){ //Es el padre
+    else if (pid > 0) //Es el padre
+    {
+        close(pipe23[LECTURA]);
+        //Escribo en el pipe los datos para enviar al proceso hijo
+        write(pipe23[ESCRITURA], &umbralBin, sizeof(int));
+        write(pipe23[ESCRITURA], &umbralNeg, sizeof(int));
+        write(pipe23[ESCRITURA], &flagResultados, sizeof(int));
+        write(pipe23[ESCRITURA], &numImagen, sizeof(int));
+        write(pipe23[ESCRITURA], &lenNombreMasc, sizeof(int));
+        write(pipe23[ESCRITURA], &(jpegData.height), sizeof(int));
+        write(pipe23[ESCRITURA], &(jpegData.width), sizeof(int));
+        write(pipe23[ESCRITURA], dataImagen, sizeof(uint8_t)*lenImagen);
+        write(pipe23[ESCRITURA], nombreArchivoMasc, lenNombreMasc*sizeof(char));
 
-			close(pipe2[LECTURA]); //El padre no va a leer, por lo tanto se cierra su descriptor
-			write(pipe2[ESCRITURA], &umbralBin, sizeof(int));
-        	write(pipe2[ESCRITURA], &umbralNeg, sizeof(int));
-			write(pipe2[ESCRITURA], &flagResultados, sizeof(int));
-			write(pipe2[ESCRITURA], &lenNombreMasc, sizeof(int));
-			write(pipe2[ESCRITURA], nombreArchivoMasc, lenNombreMasc*sizeof(char));
-			write(pipe2[ESCRITURA], imagename, 30*sizeof(char));
-            write(pipe2[ESCRITURA], &jpegData, sizeof(JpegData));
-			write(pipe2[ESCRITURA], jpegData.data, sizeof(uint8_t*)*len);
-			write(pipe2[ESCRITURA], &numImagen, sizeof(int));
-			printf("al parecer soy el padre y mi pid es: %i\n" , getpid());
-        	printf("Ya escribi el arr en el pipe\n");
-			waitpid(pid, &status,0);
-		}
-		else{ //Es el hijo
-            printf("Soy el hijo de la lectura\n");
-			close(pipe2[ESCRITURA]); //Como el hijo no va a escribir, cierra el descriptor de escritura
-			dup2(pipe2[LECTURA], STDIN_FILENO);
-			char *args[]={"./prcsConversion",NULL}; 
-        	execv(args[0],args);
-		}
-	free(pipe2);
-	liberarJpeg(&jpegData);
-	printf("termina el proceso de lectura\n");
-    return 0; 
+        //Espera a que el hijo termine su ejecución
+        waitpid(pid, &status, 0);
+    }
+
+    else //es el hijo
+    {
+        close(pipe23[ESCRITURA]);
+        dup2(pipe23[LECTURA], STDIN_FILENO);
+        
+        //se cambia el codigo del proceso hijo
+        char *args[]={"./pConversion",NULL}; 
+        execv(args[0],args);
+    }
+
+    liberarJpeg(&jpegData);
+    printf("El proceso de Lectura finaliza tu ejecucion\n");
+    return 1;
+    
 }
