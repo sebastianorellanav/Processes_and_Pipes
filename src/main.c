@@ -73,6 +73,7 @@ int main (int argc, char *argv[]){
 	//Para cada Imagen
 	for (int i = 1; i <= cantImagenes; i++)
 	{
+		printf("Este es el for del proceso main\n");
 		int pipe12[2];
 		pipe(pipe12);
 		int status;
@@ -88,7 +89,7 @@ int main (int argc, char *argv[]){
 
 		else if (pid > 0) //Si es el padre
 		{
-			printf("entra al padre\n");
+			printf("entra al padre (Main)\n");
 			close(pipe12[LECTURA]);
 			//Escribo las cosas en el pipe para enviarselas al proceso hijo
 			write(pipe12[ESCRITURA], &umbralBin, sizeof(int));
@@ -104,7 +105,7 @@ int main (int argc, char *argv[]){
 
 		else
 		{
-			printf("entra al hijo\n");
+			printf("entra al hijo (Hijo del main -> Plectura)\n");
 			close(pipe12[ESCRITURA]);
 			dup2(pipe12[LECTURA], STDIN_FILENO);
 

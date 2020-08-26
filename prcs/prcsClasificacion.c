@@ -13,6 +13,7 @@
 
 int main(int argc, char *argv[])
 {
+    printf("Aqui inicia el proceso de Clasificacion\n");
     //se crean las variables para guardar los datos leidos del pipe
     int umbralNeg = 0;
     int flagResultados = 0;
@@ -22,6 +23,7 @@ int main(int argc, char *argv[])
     int lenImagen = 0;
     JpegData jpegData;
 
+    printf("Se va a comenzar a leer el pipe en el proceso clasificacion\n");
     //Se leen los datos del pipe56
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
@@ -33,14 +35,12 @@ int main(int argc, char *argv[])
     jpegData.width = width;
     jpegData.ch = 1;
     alloc_jpeg(&jpegData);
-	uint8_t dataImagen[lenImagen];
-    read(STDIN_FILENO, dataImagen, sizeof(uint8_t)*lenImagen);
-
 	for (int i = 0; i < lenImagen; i++)
-	{
-		jpegData.data[i] = dataImagen[i];
-	}
-	
+    {
+         read(STDIN_FILENO, &(jpegData.data[i]), sizeof(uint8_t));
+    }
+
+    printf("Se leyo correctamente el pipe en el proceso de clasificacion\n");
 
     //-----------------------------------------------------------
     //Se clasifica la imagen
@@ -55,9 +55,7 @@ int main(int argc, char *argv[])
 			printf("|          %s       |             %s          |\n", imagename, nearlyBlack);
 		}
 	}
-	//--------------------------------------------------------------------
-	
-
+    printf("Se clasifico correctamente la imagen\n");
     //-------------------------------------------------------------------
     //Se crea un nuevo pipe y un nuevo proceso
     int pipe67[2];
@@ -79,7 +77,11 @@ int main(int argc, char *argv[])
         write(pipe67[ESCRITURA], &numImagen, sizeof(int));
         write(pipe67[ESCRITURA], &height, sizeof(int));
         write(pipe67[ESCRITURA], &width, sizeof(int));
-        write(pipe67[ESCRITURA], dataImagen, sizeof(uint8_t)*lenImagen);
+        for (int i = 0; i < lenImagen; i++)
+        {
+            write(pipe67[ESCRITURA], &(jpegData.data[i]), sizeof(uint8_t));
+        }
+        
 
         //Se espera al hijo
         waitpid(pid, &status, 0);

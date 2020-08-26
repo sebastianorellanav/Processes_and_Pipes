@@ -13,6 +13,7 @@
 
 int main(int argc, char *argv[])
 {
+    printf("Aqui inicia el proceso Filtro\n");
     //Se crean las variables para almacenar los datos leidos del pipe34
     int umbralBin = 0;
     int umbralNeg = 0;
@@ -24,6 +25,7 @@ int main(int argc, char *argv[])
     int lenImagen = 0;
     JpegData jpegData;
 
+    printf("Se va a comenzar a leer el pipe en el proceso Filtro\n");
     //Se leen los datos del pipe34
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
@@ -37,31 +39,21 @@ int main(int argc, char *argv[])
     jpegData.width = width;
     jpegData.ch = 1;
     alloc_jpeg(&jpegData);
-	uint8_t dataImagen[lenImagen];
-    read(STDIN_FILENO, dataImagen, sizeof(uint8_t)*lenImagen);
+	for (int i = 0; i < lenImagen; i++)
+    {
+        read(STDIN_FILENO, &(jpegData.data[i]), sizeof(uint8_t));   
+    }
     char nombreArchivoMasc[lenNombreMasc];
     read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc*sizeof(char));
 
-	for (int i = 0; i < lenImagen; i++)
-	{
-		jpegData.data[i] = dataImagen[i];
-	}
-	
-
+    printf("Se leyo correctamente el pipe en el proceso Filtro\n");
     //-------------------------------------------------------------------
     //Se aplica el Filtro Laplaciano
 	printf("la mascara se llama == %s\n", nombreArchivoMasc);
     int **mascara = leerMascara(nombreArchivoMasc);
     jpegData = aplicarFiltroLaplaciano(jpegData,mascara);
     liberarMascara(mascara);
-	//-----------------------------------------------------------------
-
-	for (int i = 0; i < lenImagen; i++)
-	{
-		dataImagen[i] = jpegData.data[i];
-	}
-	
-
+    printf("Se aplico correctamente el filtro\n");
     //------------------------------------------------------------------
     //Se crea un nuevo pipe y un nuevo proceso
     int pipe45[2];
@@ -86,7 +78,11 @@ int main(int argc, char *argv[])
         write(pipe45[ESCRITURA], &numImagen, sizeof(int));
         write(pipe45[ESCRITURA], &(jpegData.height), sizeof(int));
         write(pipe45[ESCRITURA], &(jpegData.width), sizeof(int));
-        write(pipe45[ESCRITURA], dataImagen, sizeof(uint8_t)*lenImagen);
+        for (int i = 0; i < lenImagen; i++)
+        {
+            write(pipe45[ESCRITURA], &(jpegData.data[i]), sizeof(uint8_t));
+        }
+        
 
         //Se espera al hijo
         waitpid(pid, &status, 0);

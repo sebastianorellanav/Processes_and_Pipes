@@ -12,7 +12,7 @@
 
 int main(int argc, char *argv[])
 {
-	printf("Este es el proceso de lectura\n");
+	printf("Aqui inicia el proceso de lectura\n");
     //Crear variables para almacenar los datos del pipe12
     int umbralBin = 0;
     int umbralNeg = 0;
@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
     int numImagen = 0;
     int lenNombreMasc = 0;
 
+    printf("Se va a comenzar a leer el pipe en el proceso Lectura\n");
     //Leer datos del pipe12
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
@@ -29,6 +30,7 @@ int main(int argc, char *argv[])
     char nombreArchivoMasc[lenNombreMasc];
     read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc);
 
+    printf("Se leyo correctamente el pipe en el proceso de Lectura\n");
     //------------------------------------------------------
     //Leer la imagen
     char filename[30] = "";
@@ -37,17 +39,8 @@ int main(int argc, char *argv[])
     int height = jpegData.height;
     int width = jpegData.width;
     int lenImagen = 3*height*width;
-	printf("antes de crear el array\n");
-	uint8_t dataImagen[lenImagen];
-	printf("si llega hasta aqui se pudo asignar la memoria\n");
-	for (int i = 0; i < lenImagen; i++)
-	{
-		dataImagen[i] = jpegData.data[i];
-		printf("%d",jpegData.data[i]);
-	}
-	printf("\n\n\n");
-	
 
+    printf("Se leyo correctamente la imagen\n");
     //------------------------------------------------------
     //Crear nuevo pipe y nuevo proceso
     int pipe23[2];
@@ -73,7 +66,11 @@ int main(int argc, char *argv[])
         write(pipe23[ESCRITURA], &lenNombreMasc, sizeof(int));
         write(pipe23[ESCRITURA], &(jpegData.height), sizeof(int));
         write(pipe23[ESCRITURA], &(jpegData.width), sizeof(int));
-        write(pipe23[ESCRITURA], dataImagen, sizeof(uint8_t)*lenImagen);
+        for (int i = 0; i < lenImagen; i++)
+        {
+            write(pipe23[ESCRITURA], &(jpegData.data[i]), sizeof(uint8_t));
+        }
+        
         write(pipe23[ESCRITURA], nombreArchivoMasc, lenNombreMasc*sizeof(char));
 
         //Espera a que el hijo termine su ejecución

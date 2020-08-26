@@ -13,7 +13,7 @@
 
 int main(int argc, char *argv[])
 {
-	printf("Este es el proceso de conversion\n");
+	printf("Aqui inicia el proceso de conversion\n");
     //Crear variables para guardar datos leidos del pipe
     int umbralBin = 0;
     int umbralNeg = 0;
@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
     int lenImagen = 0;
     JpegData jpegData;
 
+    printf("Se va a comenzar a leer el pipe en el proceso Conversion\n");
     //Leer datos del pipe23
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
@@ -38,18 +39,19 @@ int main(int argc, char *argv[])
     jpegData.width = width;
     jpegData.ch = 3;
     alloc_jpeg(&jpegData);
-	uint8_t dataImagen[lenImagen];
-    read(STDIN_FILENO, dataImagen, sizeof(uint8_t)*lenImagen);
+	for (int i = 0; i < lenImagen; i++)
+    {
+       read(STDIN_FILENO, &(jpegData.data[i]), sizeof(uint8_t));
+    }
     char nombreArchivoMasc[lenNombreMasc];
     read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc*sizeof(char));
 
-	for (int i = 0; i < lenImagen; i++)
-	{
-		jpegData.data[i] = dataImagen[i];
-		printf("%d",dataImagen[i]);
-	}
+	//for (int i = 0; i < lenImagen; i++)
+	//{
+	//	printf("%d",jpegData.data[i]);
+	//}
 	
-
+    printf("Se leyo correctamente el pipe del proceso conversion\n");
     //-----------------------------------------------------------
     //Convertir Imagen a Blanco y Negro
     jpegData = convertirAEscalaGrises(jpegData);
@@ -57,14 +59,7 @@ int main(int argc, char *argv[])
 
 	//-----------------------------------------------------------------
 	
-	lenImagen = jpegData.width*jpegData.height;
-	uint8_t newDataImagen[lenImagen];
-
-	for (int i = 0; i < lenImagen; i++)
-	{
-		newDataImagen[i] = jpegData.data[i];
-	}
-	
+	lenImagen = jpegData.width*jpegData.height;	
 
     //-----------------------------------------------------------------
     //Se crea un nuevo pipe y un nuevo proceso
@@ -91,7 +86,11 @@ int main(int argc, char *argv[])
         write(pipe34[ESCRITURA], &lenNombreMasc, sizeof(int));
         write(pipe34[ESCRITURA], &height, sizeof(int));
         write(pipe34[ESCRITURA], &width, sizeof(int));
-        write(pipe34[ESCRITURA], newDataImagen, sizeof(uint8_t)*lenImagen);
+        for (int i = 0; i < lenImagen; i++)
+        {
+            write(pipe34[ESCRITURA], &(jpegData.data[i]), sizeof(uint8_t));
+        }
+        
         write(pipe34[ESCRITURA], nombreArchivoMasc, lenNombreMasc*sizeof(char));
 
         //Se espera a que el proceso hijo termine su ejecucion

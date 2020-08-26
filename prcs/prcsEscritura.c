@@ -12,6 +12,7 @@
 #define ESCRITURA 1
 int main(int argc, char *argv[])
 {
+    printf("Aqui inicia el proceso de Escritura\n");
     //se crean las variables para guardar los datos leidos del pipe67
     int numImagen = 0;
     int height = 0;
@@ -19,6 +20,7 @@ int main(int argc, char *argv[])
     int lenImagen = 0;
     JpegData jpegData;
 
+    printf("Se va a leer el pipe en el proceso de Escritura\n");
     //Se leen los datos del pipe67
     read(STDIN_FILENO, &numImagen, sizeof(int));
     read(STDIN_FILENO, &height, sizeof(int));
@@ -28,14 +30,12 @@ int main(int argc, char *argv[])
     jpegData.width = width;
     jpegData.ch = 1;
     alloc_jpeg(&jpegData);
-    uint8_t dataImagen[lenImagen];
-    read(STDIN_FILENO, jpegData.data, sizeof(uint8_t*)*lenImagen);
-
     for (int i = 0; i < lenImagen; i++)
     {
-        jpegData.data[i] = dataImagen[i];
+        read(STDIN_FILENO, &(jpegData.data[i]), sizeof(uint8_t));
     }
-    
+
+    printf("Se leyó correctamente el pipe en el proceso de Escritura\n");
 
     //------------------------------------------------------------------
     //Se escribe la imagen
