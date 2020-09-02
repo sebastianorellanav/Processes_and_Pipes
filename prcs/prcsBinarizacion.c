@@ -13,8 +13,7 @@
 
 int main(int argc, char *argv[])
 {
-    printf("Aqui inicia el proceso de Binarizacion\n");
-    //Se crean las variables para guardar los datos leidos del pipe45
+    //Se crean las variables para guardar los datos leidos del pipe45 proveniente del prcsFiltro
     int umbralBin = 0;
     int umbralNeg = 0;
     int flagResultados = 0;
@@ -24,7 +23,6 @@ int main(int argc, char *argv[])
     int lenImagen = 0;
     JpegData jpegData;
 
-    printf("Se va a comenzar a leer el pipe en el proceso binarizacion\n");
     //Se leen los datos del pipe
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
@@ -41,18 +39,16 @@ int main(int argc, char *argv[])
     {
         read(STDIN_FILENO, &(jpegData.data[i]), sizeof(uint8_t));
     }
-    printf("Se leyo correctamente el pipe en el proceso binarizacion\n");
     //-----------------------------------------------------
     //Se Binariza la imagen
     jpegData = binarizarImagen(jpegData, umbralBin);
-    printf("Se binariza Correctamente la imagen\n");
 
     //---------------------------------------------------------
     //Se crea un nuevo pipe y un nuevo proceso
-    int pipe56[2];
+    int pipe56[2];  //Se declara pipe 56
     int status;
     pid_t pid;
-    pipe(pipe56);
+    pipe(pipe56);   //Del pipe 5 al pipe 6
 
     pid = fork();
     if(pid < 0) //No se pudo crear el proceso hijo
@@ -81,6 +77,7 @@ int main(int argc, char *argv[])
 
     else //es el hijo
     {
+        //Ingresa al hijo. Hijo del prcsBinarizacion -> pClasificacion
         close(pipe56[ESCRITURA]);
         dup2(pipe56[LECTURA], STDIN_FILENO);
 
@@ -90,6 +87,5 @@ int main(int argc, char *argv[])
     }
 
     liberarJpeg(&jpegData);
-    printf("El proceso de Binarización Termina su ejecucion\n");
     return 1;
 }

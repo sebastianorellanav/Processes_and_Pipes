@@ -16,7 +16,7 @@
 #include "../incl/conversion.h"
 #include "../incl/filtro.h"
 
-#define LECTURA 0
+#define LECTURA 0		
 #define ESCRITURA 1
 
 //Funcion Main
@@ -73,15 +73,14 @@ int main (int argc, char *argv[]){
 	//Para cada Imagen
 	for (int i = 1; i <= cantImagenes; i++)
 	{
-		printf("Este es el for del proceso main\n");
-		int pipe12[2];
-		pipe(pipe12);
+		int pipe12[2];	//Se declara pipe 12 
+		pipe(pipe12);	//Del pipe 1 al pipe 2
 		int status;
 		pid_t pid;
-		int lenNombreMasc = strlen(nombreArchivoMasc);
+		int lenNombreMasc = strlen(nombreArchivoMasc); //Largo del kernel
 
-		pid = fork();
-		if(pid < 0)	//Si no se pudo crear el proceso
+		pid = fork();	//Se crea proceso
+		if(pid < 0)		//Si no se pudo crear el proceso
 		{
 			fprintf(stderr, "No se pudo crear el proceso de Lectura\n");
 			return 1;
@@ -89,23 +88,22 @@ int main (int argc, char *argv[]){
 
 		else if (pid > 0) //Si es el padre
 		{
-			printf("entra al padre (Main)\n");
 			close(pipe12[LECTURA]);
-			//Escribo las cosas en el pipe para enviarselas al proceso hijo
-			write(pipe12[ESCRITURA], &umbralBin, sizeof(int));
+			//Se escriben las variables en el pipe para enviarlas al proceso hijo
+			write(pipe12[ESCRITURA], &umbralBin, sizeof(int));				
 			write(pipe12[ESCRITURA], &umbralNeg, sizeof(int));
 			write(pipe12[ESCRITURA], &flagResultados, sizeof(int));
 			write(pipe12[ESCRITURA], &i, sizeof(int));
 			write(pipe12[ESCRITURA], &lenNombreMasc, sizeof(int));
 			write(pipe12[ESCRITURA], nombreArchivoMasc, lenNombreMasc);
 
-			//Espero al hijo
+			//Espera a que el hijo termine su ejecución
 			waitpid(pid, &status, 0);
 		}
 
 		else
 		{
-			printf("entra al hijo (Hijo del main -> Plectura)\n");
+			//Ingresa al hijo. Hijo del main -> Plectura
 			close(pipe12[ESCRITURA]);
 			dup2(pipe12[LECTURA], STDIN_FILENO);
 
@@ -113,65 +111,9 @@ int main (int argc, char *argv[]){
 			char *args[]={"./pLectura",NULL}; 
         	execv(args[0],args);
 		}
-
-	printf("Se proceso correctamente la imagen %d\n",i);
-
 	}
-	printf("Finaliza el procesamiento de imagenes\n");
 	return 1;
 	
 }
 
 
-	/*
-	int **mascara = leerMascara(nombreArchivoMasc);
-
-	uint8_t num = 10;
-	num = num*(-1);
-	int entero = (int)num;
-
-
-    // Para cada imagen
-	for (int i = 1; i <= cantImagenes; i++)
-	{
-
-		char filename[30];
-		char imagename[30];
-		sprintf(filename,"./imagen_%i.jpg",i);
-		sprintf(imagename, "imagen_%i",i);
-		
-		//1. Leer la imagen
-		JpegData jpegData = leerImagenes(filename); 
-
-		//2. Convertir a escala de grises
-		jpegData = convertirAEscalaGrises(jpegData); 
-		
-		//3. aplicar filtro laplaciano
-		jpegData = aplicarFiltroLaplaciano(jpegData,mascara); 
-		
-		//4. binarizar imagen
-		jpegData = binarizarImagen(jpegData, umbralBin);
-		
-		//5. Clasificar imagen
-		char *nearlyBlack = analisisDePropiedad(jpegData, umbralNeg);
-
-		//6. Escribir imagen
-		char fileout[30];
-		sprintf(fileout,"./out_%i.jpg",i);
-		escribirImagenes(jpegData, "escalagrises",fileout);
-
-		//7. liberar memoria
-		liberarJpeg(&jpegData);
-
-		if(flagResultados){
-			if(nearlyBlack[0] == 'n'){
-				printf("|          %s       |             %s           |\n", imagename, nearlyBlack);
-			}
-			else{
-				printf("|          %s       |             %s          |\n", imagename, nearlyBlack);
-			}
-		}
-	}
-*/
-   
-    

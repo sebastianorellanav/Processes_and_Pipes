@@ -12,7 +12,6 @@
 #define ESCRITURA 1
 int main(int argc, char *argv[])
 {
-    printf("Aqui inicia el proceso de Escritura\n");
     //se crean las variables para guardar los datos leidos del pipe67
     int numImagen = 0;
     int height = 0;
@@ -20,7 +19,6 @@ int main(int argc, char *argv[])
     int lenImagen = 0;
     JpegData jpegData;
 
-    printf("Se va a leer el pipe en el proceso de Escritura\n");
     //Se leen los datos del pipe67
     read(STDIN_FILENO, &numImagen, sizeof(int));
     read(STDIN_FILENO, &height, sizeof(int));
@@ -45,7 +43,6 @@ int main(int argc, char *argv[])
 
     liberarJpeg(&jpegData);
     
-    printf("El proceso de Escritura finaliza su ejecucion\n");
     return 1; 
     
     

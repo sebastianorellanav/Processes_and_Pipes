@@ -12,16 +12,14 @@
 
 int main(int argc, char *argv[])
 {
-	printf("Aqui inicia el proceso de lectura\n");
-    //Crear variables para almacenar los datos del pipe12
+    //Se crean variables para obtener los datos del pipe12 proveniente del main
     int umbralBin = 0;
     int umbralNeg = 0;
     int flagResultados = 0;
     int numImagen = 0;
     int lenNombreMasc = 0;
 
-    printf("Se va a comenzar a leer el pipe en el proceso Lectura\n");
-    //Leer datos del pipe12
+    //Se leen los datos del pipe12 proviente del main
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
@@ -30,21 +28,19 @@ int main(int argc, char *argv[])
     char nombreArchivoMasc[lenNombreMasc];
     read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc);
 
-    printf("Se leyo correctamente el pipe en el proceso de Lectura\n");
     //------------------------------------------------------
-    //Leer la imagen
+    //Se lee la imagen haciendo uso de la función leerImagenes
     char filename[30] = "";
     sprintf(filename,"./imagen_%i.jpg",numImagen);
     JpegData jpegData = leerImagenes(filename);
     int height = jpegData.height;
     int width = jpegData.width;
-    int lenImagen = 3*height*width;
+    int lenImagen = 3*height*width; //Se obtiene largo de la imagen
 
-    printf("Se leyo correctamente la imagen\n");
     //------------------------------------------------------
     //Crear nuevo pipe y nuevo proceso
-    int pipe23[2];
-    pipe(pipe23);
+    int pipe23[2];  //Se declara pipe 23 
+    pipe(pipe23);   //Del pipe 2 al pipe 3
     int status;
     pid_t pid;
 
@@ -58,7 +54,7 @@ int main(int argc, char *argv[])
     else if (pid > 0) //Es el padre
     {
         close(pipe23[LECTURA]);
-        //Escribo en el pipe los datos para enviar al proceso hijo
+        //Se escriben las variables en el pipe para enviarlas al proceso hijo
         write(pipe23[ESCRITURA], &umbralBin, sizeof(int));
         write(pipe23[ESCRITURA], &umbralNeg, sizeof(int));
         write(pipe23[ESCRITURA], &flagResultados, sizeof(int));
@@ -66,6 +62,8 @@ int main(int argc, char *argv[])
         write(pipe23[ESCRITURA], &lenNombreMasc, sizeof(int));
         write(pipe23[ESCRITURA], &(jpegData.height), sizeof(int));
         write(pipe23[ESCRITURA], &(jpegData.width), sizeof(int));
+
+        //Se entrega cada bit de la imagen al pipe23
         for (int i = 0; i < lenImagen; i++)
         {
             write(pipe23[ESCRITURA], &(jpegData.data[i]), sizeof(uint8_t));
@@ -79,6 +77,7 @@ int main(int argc, char *argv[])
 
     else //es el hijo
     {
+        //Ingresa al hijo. Hijo del prcsLectura -> pConversion
         close(pipe23[ESCRITURA]);
         dup2(pipe23[LECTURA], STDIN_FILENO);
         

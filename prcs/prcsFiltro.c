@@ -13,8 +13,7 @@
 
 int main(int argc, char *argv[])
 {
-    printf("Aqui inicia el proceso Filtro\n");
-    //Se crean las variables para almacenar los datos leidos del pipe34
+    //Se crean variables para obtener los datos del pipe34 proveniente del prcsConversion
     int umbralBin = 0;
     int umbralNeg = 0;
     int flagResultados = 0;
@@ -25,8 +24,7 @@ int main(int argc, char *argv[])
     int lenImagen = 0;
     JpegData jpegData;
 
-    printf("Se va a comenzar a leer el pipe en el proceso Filtro\n");
-    //Se leen los datos del pipe34
+    //Se leen los datos del pipe34 proviente del prcsConversion
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
@@ -46,18 +44,15 @@ int main(int argc, char *argv[])
     char nombreArchivoMasc[lenNombreMasc];
     read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc*sizeof(char));
 
-    printf("Se leyo correctamente el pipe en el proceso Filtro\n");
     //-------------------------------------------------------------------
     //Se aplica el Filtro Laplaciano
-	printf("la mascara se llama == %s\n", nombreArchivoMasc);
     int **mascara = leerMascara(nombreArchivoMasc);
     jpegData = aplicarFiltroLaplaciano(jpegData,mascara);
     liberarMascara(mascara);
-    printf("Se aplico correctamente el filtro\n");
     //------------------------------------------------------------------
     //Se crea un nuevo pipe y un nuevo proceso
-    int pipe45[2];
-    int status;
+    int pipe45[2];  //Se declara pipe 45
+    int status;     //Del pipe 4 al pipe 5
     pid_t pid;
     pipe(pipe45);
 
@@ -71,7 +66,7 @@ int main(int argc, char *argv[])
     else if (pid > 0) //es el padre
     {
         close(pipe45[LECTURA]);
-        //se escriben los datos en el pipe45
+        //se escriben los datos en el pipe45 
         write(pipe45[ESCRITURA], &umbralBin, sizeof(int));
         write(pipe45[ESCRITURA], &umbralNeg, sizeof(int));
         write(pipe45[ESCRITURA], &flagResultados, sizeof(int));
@@ -90,6 +85,7 @@ int main(int argc, char *argv[])
 
     else //es el hijo
     {
+        //Ingresa al hijo. Hijo del prcsFiltro -> pBinarizacion
         close(pipe45[ESCRITURA]);
         dup2(pipe45[LECTURA], STDIN_FILENO);
         
@@ -99,7 +95,6 @@ int main(int argc, char *argv[])
     }
 
     liberarJpeg(&jpegData);
-    printf("El proceso Filtro termina su ejecución\n");
     return 1;
     
 }

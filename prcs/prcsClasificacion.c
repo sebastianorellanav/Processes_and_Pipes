@@ -13,8 +13,7 @@
 
 int main(int argc, char *argv[])
 {
-    printf("Aqui inicia el proceso de Clasificacion\n");
-    //se crean las variables para guardar los datos leidos del pipe
+    //se crean las variables para guardar los datos leidos del pipe56
     int umbralNeg = 0;
     int flagResultados = 0;
     int numImagen = 0;
@@ -23,8 +22,7 @@ int main(int argc, char *argv[])
     int lenImagen = 0;
     JpegData jpegData;
 
-    printf("Se va a comenzar a leer el pipe en el proceso clasificacion\n");
-    //Se leen los datos del pipe56
+    //Se leen los datos del pipe56 proviente del prcsBinarizacion
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
     read(STDIN_FILENO, &numImagen, sizeof(int));
@@ -40,8 +38,6 @@ int main(int argc, char *argv[])
          read(STDIN_FILENO, &(jpegData.data[i]), sizeof(uint8_t));
     }
 
-    printf("Se leyo correctamente el pipe en el proceso de clasificacion\n");
-
     //-----------------------------------------------------------
     //Se clasifica la imagen
     char imagename[30] = "";
@@ -55,13 +51,13 @@ int main(int argc, char *argv[])
 			printf("|          %s       |             %s          |\n", imagename, nearlyBlack);
 		}
 	}
-    printf("Se clasifico correctamente la imagen\n");
+
     //-------------------------------------------------------------------
     //Se crea un nuevo pipe y un nuevo proceso
-    int pipe67[2];
+    int pipe67[2];  //Se declara pipe 67
     int status;
     pid_t pid;
-    pipe(pipe67);
+    pipe(pipe67);   //Del pipe 6 al pipe 7
 
     pid = fork();
     if(pid < 0) //No se pudo crear el proceso
@@ -73,7 +69,7 @@ int main(int argc, char *argv[])
     else if (pid > 0) //es el padre
     {
         close(pipe67[LECTURA]);
-        //Se escriben los datos en el pipe67
+        //Se escriben los datos en el pipe67 los datos para enviar al hijo
         write(pipe67[ESCRITURA], &numImagen, sizeof(int));
         write(pipe67[ESCRITURA], &height, sizeof(int));
         write(pipe67[ESCRITURA], &width, sizeof(int));
@@ -89,6 +85,7 @@ int main(int argc, char *argv[])
 
     else //es el hijo
     {
+        //Ingresa al hijo. Hijo del prcsClasificacion -> pEscritura
         close(pipe67[ESCRITURA]);
         dup2(pipe67[LECTURA], STDIN_FILENO);
 
@@ -98,7 +95,6 @@ int main(int argc, char *argv[])
     }
     
     liberarJpeg(&jpegData);
-    printf("El proceso de Clasificación termina su ejecucion\n");
     return 1;
     
 }

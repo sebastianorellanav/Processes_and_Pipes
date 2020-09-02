@@ -13,8 +13,7 @@
 
 int main(int argc, char *argv[])
 {
-	printf("Aqui inicia el proceso de conversion\n");
-    //Crear variables para guardar datos leidos del pipe
+    //Se crean variables para obtener los datos del pipe23 proveniente del prcsLectura
     int umbralBin = 0;
     int umbralNeg = 0;
     int flagResultados = 0;
@@ -25,8 +24,7 @@ int main(int argc, char *argv[])
     int lenImagen = 0;
     JpegData jpegData;
 
-    printf("Se va a comenzar a leer el pipe en el proceso Conversion\n");
-    //Leer datos del pipe23
+    //Se leen los datos del pipe23 proviente del prcsLectura
     read(STDIN_FILENO, &umbralBin, sizeof(int));
     read(STDIN_FILENO, &umbralNeg, sizeof(int));
     read(STDIN_FILENO, &flagResultados, sizeof(int));
@@ -38,7 +36,9 @@ int main(int argc, char *argv[])
     jpegData.height = height;
     jpegData.width = width;
     jpegData.ch = 3;
-    alloc_jpeg(&jpegData);
+    alloc_jpeg(&jpegData);  //Se declara memoria para la imagen
+
+    //Se lee cada bit entregado por el pipe anterior
 	for (int i = 0; i < lenImagen; i++)
     {
        read(STDIN_FILENO, &(jpegData.data[i]), sizeof(uint8_t));
@@ -46,16 +46,9 @@ int main(int argc, char *argv[])
     char nombreArchivoMasc[lenNombreMasc];
     read(STDIN_FILENO, nombreArchivoMasc, lenNombreMasc*sizeof(char));
 
-	//for (int i = 0; i < lenImagen; i++)
-	//{
-	//	printf("%d",jpegData.data[i]);
-	//}
-	
-    printf("Se leyo correctamente el pipe del proceso conversion\n");
     //-----------------------------------------------------------
     //Convertir Imagen a Blanco y Negro
     jpegData = convertirAEscalaGrises(jpegData);
-    printf("Se convierte la imagen exitosamente\n");
 
 	//-----------------------------------------------------------------
 	
@@ -63,8 +56,8 @@ int main(int argc, char *argv[])
 
     //-----------------------------------------------------------------
     //Se crea un nuevo pipe y un nuevo proceso
-    int pipe34[2];
-    int status;
+    int pipe34[2];  //Se declara pipe 34
+    int status;     //Del pipe 3 al pipe 4
     pid_t pid;
     pipe(pipe34);
 
@@ -100,6 +93,7 @@ int main(int argc, char *argv[])
 
     else //es el hijo
     {
+        //Ingresa al hijo. Hijo del prcsConcersion -> pFiltro
         close(pipe34[ESCRITURA]);
         dup2(pipe34[LECTURA], STDIN_FILENO);
         //Se cambia el codigo del proceso hijo
@@ -108,7 +102,6 @@ int main(int argc, char *argv[])
     }    
 
     liberarJpeg(&jpegData);
-    printf("El proceso de Conversion finaliza su ejecución\n");
     return 1;
 
 }
