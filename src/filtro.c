@@ -13,7 +13,6 @@
 //Salidas:      - Matriz de enteros que representa la mascara leída.
 
 int **leerMascara(char *nombreMascara){
-    printf("entra a leer mascara\n");
     FILE *archivo = fopen(nombreMascara,"r");
     if(archivo == NULL){
         printf("Error: no se ha detectado un archivo de texto \n"); 
@@ -29,7 +28,6 @@ int **leerMascara(char *nombreMascara){
         mascara[i][1] = num2;
         mascara[i][2] = num3;
     }
-    printf("sale de leer mascara\n");
     return mascara;
 }
 
@@ -37,13 +35,11 @@ int **leerMascara(char *nombreMascara){
 //Funcionamiento: asigna un espacio de memoria a la matriz de enteros que representa a la mascara.
 //Salidas:      - Matriz de enteros y el espacio de memoria pertinente.
 int **crearPunteroMascara(){
-    printf("entra a crear puntero mascara\n");
     int i= 0;
     int **mascara = (int**)malloc(3*sizeof(int*));
     for(i = 0; i < 3; i++){
         mascara[i] = (int*)malloc(3*sizeof(int));
     }
-    printf("sale de crear puntero mascara\n");
     return mascara;
 }
 
@@ -55,7 +51,6 @@ int **crearPunteroMascara(){
 //Salidas:      - Imagen del tipo JpegData luego de aplicar el filtro laplaciano sobre ella
 
 JpegData aplicarFiltroLaplaciano(JpegData img,int **mascara){
-    printf("Entra al laplaciano\n");
     int w = img.width;
     int h = img.height;
     int loc = w +1;
@@ -71,7 +66,6 @@ JpegData aplicarFiltroLaplaciano(JpegData img,int **mascara){
         nuevaImagen.data[i] = img.data[i];
     }
 
-    //printf("\n");
     for(i = 1; i < h -1; i++){
         for(j = 1; j < w - 1; j++){
             calcularFiltro(&img,&nuevaImagen,mascara,loc,w,h);
@@ -79,7 +73,7 @@ JpegData aplicarFiltroLaplaciano(JpegData img,int **mascara){
         }
         loc+=2;         //Permite omitir los margenes de la matriz (en términos visuales) de píxeles
     }
-    printf("Antes de liberar la memoria\n");
+
     liberarJpeg(&img);
     return nuevaImagen;
 

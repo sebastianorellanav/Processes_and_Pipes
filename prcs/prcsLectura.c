@@ -87,7 +87,6 @@ int main(int argc, char *argv[])
     }
 
     liberarJpeg(&jpegData);
-    printf("El proceso de Lectura finaliza tu ejecucion\n");
     return 1;
     
 }

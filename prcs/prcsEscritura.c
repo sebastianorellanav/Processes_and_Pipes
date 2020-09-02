@@ -33,7 +33,6 @@ int main(int argc, char *argv[])
         read(STDIN_FILENO, &(jpegData.data[i]), sizeof(uint8_t));
     }
 
-    printf("Se leyó correctamente el pipe en el proceso de Escritura\n");
 
     //------------------------------------------------------------------
     //Se escribe la imagen
